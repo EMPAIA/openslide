@@ -562,12 +562,12 @@ static char *_create_file_name_with_extension(const char *filename, const char *
  */
 static char *_create_file_name_for_layer(index_file_content *file_info, const char *filename, uint8_t layer, int32_t focal_plane_index)
 {
-  // result length is at least the base filename length + the .img extension + -levelXX
-  uint32_t extension_length = strlen(IMAGE_FILE_EXTENSION) + 13;
-  /*if (focal_plane_index != 0) {
+  // result length is at least the base filename length + the .img extension + -levelXX + terminating string
+  uint32_t extension_length = strlen(IMAGE_FILE_EXTENSION) + strlen("-levelXX") + 2;
+  if (focal_plane_index != 0) {
     // Focal plane id is infixed with + or - and the two digit id
     extension_length += 3;
-  }*/
+  }
 
   char extension[extension_length];
   if (file_info->major_version == 1)
