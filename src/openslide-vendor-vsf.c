@@ -532,26 +532,6 @@ static bool _read_index_file(const char *filename, index_file_content *content, 
 }
 
 /**
- * Build the filename with the additional extension
- * @param filename VSF filename
- * @param extension extension to append
- * @return Filename reflecting the given properties
- */
-static char *_create_file_name_with_extension(const char *filename, const char *extension)
-{
-  uint32_t length = strlen(filename);
-  uint8_t extension_length = strlen(INDEX_FILE_EXTENSION);
-
-  // result length is the base filename length + the extension length
-  uint32_t result_length = length - extension_length + strlen(extension);
-  char *result = g_malloc0(result_length);
-  memcpy(result, filename, (length - extension_length) * sizeof(char));
-  memcpy(result + (length - extension_length), extension, strlen(extension) * sizeof(char));
-
-  return result;
-}
-
-/**
  * Build the filename for the additional image source file based on the given
  * index file, image layer and focal plane index
  * @param file_info Index file information
@@ -562,28 +542,42 @@ static char *_create_file_name_with_extension(const char *filename, const char *
  */
 static char *_create_file_name_for_layer(index_file_content *file_info, const char *filename, uint8_t layer, int32_t focal_plane_index)
 {
+  uint32_t length = strlen(filename);
+  uint8_t index_extension_length = strlen(INDEX_FILE_EXTENSION);
+  
   // result length is at least the base filename length + the .img extension + -levelXX + terminating string
-  uint32_t extension_length = strlen(IMAGE_FILE_EXTENSION) + strlen("-levelXX") + 2;
+  uint32_t extension_length = strlen(IMAGE_FILE_EXTENSION) + strlen("-levelXX") + 1;
+
+  if (file_info->major_version != 1) {
+    extension_length += 1;
+  }
   if (focal_plane_index != 0) {
     // Focal plane id is infixed with + or - and the two digit id
     extension_length += 3;
   }
 
-  char extension[extension_length];
+  // result length is the base filename length + the extension length
+  uint32_t base_lenght = length - index_extension_length;
+  uint32_t result_length = base_lenght + extension_length;
+
+  char *result = g_malloc(result_length);
+  result[result_length - 1] = '\0';
+  snprintf(result, base_lenght + 1, "%s", filename);
+
   if (file_info->major_version == 1)
   {
-    sprintf(extension, "-level%1i%s", layer, IMAGE_FILE_EXTENSION);
+    snprintf(result + base_lenght, extension_length + 1, "-level%1i%s", layer, IMAGE_FILE_EXTENSION);
   }
   else if (focal_plane_index == 0)
   {
-    sprintf(extension, "-level%02i%s", layer, IMAGE_FILE_EXTENSION);
+    snprintf(result + base_lenght, extension_length + 1, "-level%02i%s", layer, IMAGE_FILE_EXTENSION);
   }
   else
   {
-    sprintf(extension, "-level%02i%+02d%s", layer, focal_plane_index, IMAGE_FILE_EXTENSION);
+    snprintf(result + base_lenght, extension_length + 1, "-level%02i%+02d%s", layer, focal_plane_index, IMAGE_FILE_EXTENSION);
   }
 
-  return _create_file_name_with_extension(filename, extension);
+  return result;
 }
 
 /**
